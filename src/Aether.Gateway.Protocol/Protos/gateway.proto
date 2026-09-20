@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package aether.gateway.v1;
+
+option csharp_namespace = "Aether.Gateway.Protocol";
+
+message GatewayAuthenticationRequest {
+  uint32 protocol_version = 1;
+  string authentication_scheme = 2;
+  bytes credential = 3;
+  string requested_service = 4;
+  map<string, string> attributes = 5;
+}
+
+message GatewayAuthenticationResponse {
+  uint32 protocol_version = 1;
+
+  oneof result {
+    GatewayConnectionGrant grant = 2;
+    GatewayRejection rejection = 3;
+  }
+}
+
+message GatewayConnectionGrant {
+  string subject = 1;
+  repeated GatewayServerEndpoint endpoints = 2;
+}
+
+message GatewayServerEndpoint {
+  string server_id = 1;
+  string service = 2;
+  string host = 3;
+  uint32 port = 4;
+  string transport = 5;
+  bytes access_ticket = 6;
+  int64 expires_at_unix_time_seconds = 7;
+  map<string, string> metadata = 8;
+}
+
+message GatewayRejection {
+  GatewayRejectionReason reason = 1;
+  string code = 2;
+}
+
+enum GatewayRejectionReason {
+  GATEWAY_REJECTION_REASON_UNSPECIFIED = 0;
+  GATEWAY_REJECTION_REASON_MALFORMED_REQUEST = 1;
+  GATEWAY_REJECTION_REASON_UNSUPPORTED_PROTOCOL = 2;
+  GATEWAY_REJECTION_REASON_AUTHENTICATION_FAILED = 3;
+  GATEWAY_REJECTION_REASON_NOT_AUTHORIZED = 4;
+  GATEWAY_REJECTION_REASON_SERVER_UNAVAILABLE = 5;
+  GATEWAY_REJECTION_REASON_INTERNAL_ERROR = 6;
+}
