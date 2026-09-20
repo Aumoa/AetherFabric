@@ -74,6 +74,7 @@ Native/C++ 구현은 관리형 구현으로 정확한 동작과 API를 확립한
 - Native C++ 빌드는 `Aether.BuildTool`을 통해 수행한다.
 - 생성된 Visual Studio C++ 프로젝트를 빌드 정의의 원본으로 사용하거나 직접 편집하지 않는다.
 - Native 모듈, source, include path와 dependency는 `*.Module.json`에 선언한다.
+- 플랫폼 분기는 compiler 전용 매크로 대신 Build Tool이 제공하는 `PLATFORM_WINDOWS`, `PLATFORM_LINUX`, `PLATFORM_MACOS`를 사용한다.
 - Visual Studio 프로젝트가 필요하면 `GenerateSolution.bat` 또는 Build Tool의 `generate` 명령으로 다시 생성한다.
 - Windows, Linux, macOS 바이너리는 원칙적으로 각 운영체제의 로컬 환경이나 CI runner에서 빌드한다.
 - 자세한 절차와 명령은 `docs/BUILDING.md`를 따른다.

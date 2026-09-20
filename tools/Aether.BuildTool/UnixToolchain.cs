@@ -83,7 +83,7 @@ internal sealed class UnixToolchain : INativeToolchain
                 arguments.Add("-DNDEBUG");
             }
 
-            arguments.Add(target.Platform == TargetPlatform.Linux ? "-DAETHER_PLATFORM_LINUX=1" : "-DAETHER_PLATFORM_MACOS=1");
+            arguments.AddRange(PlatformDefinitions.For(target.Platform).Select(definition => "-D" + definition));
             arguments.AddRange(module.Manifest.Definitions.Select(definition => "-D" + definition));
             foreach (var includeDirectory in module.IncludeDirectories)
             {

@@ -23,6 +23,7 @@ public sealed class VisualStudioGeneratorTests
             Assert.Contains("<ConfigurationType>Makefile</ConfigurationType>", nativeProject);
             Assert.Contains("Aether.BuildTool.dll", nativeProject);
             Assert.Contains("NMakeBuildCommandLine", nativeProject);
+            Assert.Contains("PLATFORM_WINDOWS=1;PLATFORM_LINUX=0;PLATFORM_MACOS=0", nativeProject);
         }
         finally
         {

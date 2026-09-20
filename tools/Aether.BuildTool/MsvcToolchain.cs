@@ -137,7 +137,11 @@ internal sealed class MsvcToolchain : INativeToolchain
             yield return "/DNDEBUG";
         }
 
-        yield return "/DAETHER_PLATFORM_WINDOWS=1";
+        foreach (var definition in PlatformDefinitions.For(target.Platform))
+        {
+            yield return "/D" + definition;
+        }
+
         foreach (var definition in module.Manifest.Definitions)
         {
             yield return "/D" + definition;

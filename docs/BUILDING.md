@@ -69,6 +69,30 @@ Native 모듈은 `*.Module.json`으로 선언한다.
 
 초기 단계에서는 선언형 manifest를 사용한다. 복잡한 조건부 빌드 규칙이 실제로 필요해지기 전까지 실행 가능한 C# 규칙 파일을 도입하지 않는다.
 
+## 플랫폼 매크로
+
+Build Tool은 모든 Native 모듈에 다음 매크로를 `0` 또는 `1`로 정의한다.
+
+| 대상 플랫폼 | `PLATFORM_WINDOWS` | `PLATFORM_LINUX` | `PLATFORM_MACOS` |
+|---|---:|---:|---:|
+| Windows | 1 | 0 | 0 |
+| Linux | 0 | 1 | 0 |
+| macOS | 0 | 0 | 1 |
+
+Native 코드는 compiler 전용 매크로 대신 이 계약을 사용한다.
+
+```cpp
+#if PLATFORM_WINDOWS
+    // Windows 전용 구현
+#elif PLATFORM_LINUX
+    // Linux 전용 구현
+#elif PLATFORM_MACOS
+    // macOS 전용 구현
+#endif
+```
+
+이 이름들은 Build Tool의 내장 정의이므로 `*.Module.json`의 `definitions`에서 재정의할 수 없다. 공개 Aether Native 헤더는 `Aether.Platform.h`를 포함하며 세 값이 모두 정의되고 정확히 하나만 활성화되었는지 검사한다.
+
 ## 진단과 정리
 
 로컬 compiler와 프로젝트 검색 결과를 확인한다.

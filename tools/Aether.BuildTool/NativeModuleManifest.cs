@@ -77,6 +77,13 @@ internal sealed class NativeModuleManifest
             throw new BuildToolException($"Native module '{Name}' uses unsupported language standard '{LanguageStandard}'.");
         }
 
+        var reservedDefinition = Definitions.FirstOrDefault(PlatformDefinitions.IsReserved);
+        if (reservedDefinition is not null)
+        {
+            throw new BuildToolException(
+                $"Native module '{Name}' cannot override built-in platform definition '{reservedDefinition}'.");
+        }
+
         foreach (var relativePath in PublicIncludeDirectories.Concat(PrivateIncludeDirectories).Concat(SourceDirectories))
         {
             var segments = relativePath.Replace('\\', '/').Split('/');

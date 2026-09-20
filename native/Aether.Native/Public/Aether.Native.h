@@ -1,15 +1,19 @@
 #pragma once
 
+#include "Aether.Platform.h"
+
 #include <cstdint>
 
-#if defined(_WIN32)
+#if PLATFORM_WINDOWS
     #if defined(AETHER_NATIVE_BUILD)
         #define AETHER_NATIVE_API __declspec(dllexport)
     #else
         #define AETHER_NATIVE_API __declspec(dllimport)
     #endif
-#else
+#elif PLATFORM_LINUX || PLATFORM_MACOS
     #define AETHER_NATIVE_API __attribute__((visibility("default")))
+#else
+    #error "Unsupported Aether platform."
 #endif
 
 extern "C"

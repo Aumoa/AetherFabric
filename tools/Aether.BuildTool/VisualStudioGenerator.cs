@@ -110,7 +110,11 @@ internal sealed class VisualStudioGenerator
         var filtersPath = projectPath + ".filters";
         var projectGuid = FormatGuid(ProjectGuid(module.Manifest.ManifestPath, workspace.RootDirectory));
         var includes = string.Join(';', module.IncludeDirectories.Select(path => ToProjectRelativePath(outputDirectory, path)));
-        var definitions = string.Join(';', module.Manifest.Definitions.Concat(["AETHER_PLATFORM_WINDOWS=1", "%(NMakePreprocessorDefinitions)"]));
+        var definitions = string.Join(
+            ';',
+            PlatformDefinitions.For(TargetPlatform.Windows)
+                .Concat(module.Manifest.Definitions)
+                .Append("%(NMakePreprocessorDefinitions)"));
         var sourceItems = string.Join(Environment.NewLine, module.Sources.Select(path => $"    <ClCompile Include=\"{Xml(ToProjectRelativePath(outputDirectory, path))}\" />"));
         var headerItems = string.Join(Environment.NewLine, module.Headers.Select(path => $"    <ClInclude Include=\"{Xml(ToProjectRelativePath(outputDirectory, path))}\" />"));
         var rootArgument = "&quot;$(SolutionDir)..\\..&quot;";

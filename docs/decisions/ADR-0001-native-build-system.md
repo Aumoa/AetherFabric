@@ -15,6 +15,7 @@ Aether의 공개 플랫폼은 C#/.NET을 중심으로 하지만, 측정으로 �
 - Native 모듈은 우선 선언형 `*.Module.json`으로 정의한다.
 - Build Tool은 모듈 검색, 의존성 순서, 산출물 경로, compiler 실행과 Visual Studio 프로젝트 생성을 담당한다.
 - Windows에서는 MSVC, Linux에서는 Clang 또는 GCC, macOS에서는 Apple Clang을 사용한다.
+- Build Tool은 compiler별 내장 매크로를 직접 사용하는 대신 `PLATFORM_WINDOWS`, `PLATFORM_LINUX`, `PLATFORM_MACOS`를 상호 배타적인 `0/1` 값으로 모든 Native 모듈에 제공한다.
 - 각 운영체제의 바이너리는 해당 운영체제의 로컬 개발 환경이나 CI runner에서 빌드한다.
 - 생성된 Visual Studio C++ 프로젝트는 NMake 프로젝트이며 실제 빌드는 `Aether.BuildTool`에 위임한다.
 - 표준 C# 프로젝트는 기존 `.csproj`와 .NET SDK 빌드를 그대로 사용한다.
