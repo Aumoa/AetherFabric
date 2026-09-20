@@ -13,3 +13,6 @@
 TestResults/
 *.nupkg
 
+## Aether generated output
+artifacts/
+Intermediate/

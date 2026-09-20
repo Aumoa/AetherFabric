@@ -1,0 +1,18 @@
+{
+  "name": "Aether.Native",
+  "kind": "sharedLibrary",
+  "languageStandard": "c++20",
+  "publicIncludeDirectories": [
+    "Public"
+  ],
+  "privateIncludeDirectories": [
+    "Private"
+  ],
+  "sourceDirectories": [
+    "Private"
+  ],
+  "definitions": [
+    "AETHER_NATIVE_BUILD=1"
+  ],
+  "dependencies": []
+}
