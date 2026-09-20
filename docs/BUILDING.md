@@ -69,6 +69,8 @@ Native 모듈은 `*.Module.json`으로 선언한다.
 
 초기 단계에서는 선언형 manifest를 사용한다. 복잡한 조건부 빌드 규칙이 실제로 필요해지기 전까지 실행 가능한 C# 규칙 파일을 도입하지 않는다.
 
+모든 Aether Native 모듈은 C++20 이상을 요구한다. Build Tool은 각 compiler에 C++20 옵션을 전달하고 `Aether.Platform.h`는 `__cplusplus` 값으로 이 요구사항을 컴파일 시 검증한다.
+
 ## 플랫폼 매크로
 
 Build Tool은 모든 Native 모듈에 다음 매크로를 `0` 또는 `1`로 정의한다.
