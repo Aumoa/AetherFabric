@@ -16,3 +16,11 @@ TestResults/
 ## Aether generated output
 artifacts/
 Intermediate/
+
+## Generated documentation
+docs/_build/
+docs/_site/
+docs/generated/
+docs/.cache/
+docs/.jekyll-cache/
+docs/.sass-cache/

@@ -1,44 +1,44 @@
-# ADR-0001: Native 빌드 시스템과 Visual Studio 통합
+# ADR-0001: Native Build System and Visual Studio Integration
 
-- 상태: Accepted
-- 날짜: 2026-09-20
+- Status: Accepted
+- Date: 2026-09-20
 
-## 컨텍스트
+## Context
 
-Aether의 공개 플랫폼은 C#/.NET을 중심으로 하지만, 측정으로 필요성이 확인된 경로는 C++ Native 가속기를 사용할 수 있다. 개발 환경은 Visual Studio를 우선하면서도 Windows, Linux, macOS 서버 바이너리를 일관된 방식으로 빌드해야 한다.
+Aether centers its public platform on C# and .NET, but measured performance bottlenecks may justify C++ native acceleration on specific execution paths. The development environment should prioritize Visual Studio while producing consistent Windows, Linux, and macOS server binaries.
 
-일반적인 Visual Studio C++ 프로젝트를 빌드 정의의 원본으로 사용하면 MSBuild와 MSVC에 결합되고, Linux와 macOS 빌드 규칙이 별도로 발전할 위험이 있다. 반대로 범용 빌드 시스템 전체를 초기에 도입하면 현재 규모에 비해 불필요한 복잡성이 생긴다.
+Using conventional Visual Studio C++ projects as the source of truth would couple the build definition to MSBuild and MSVC, creating a risk that Linux and macOS rules evolve independently. Introducing a complete general-purpose build system at this early stage would add complexity beyond the current requirements.
 
-## 결정
+## Decision
 
-- 저장소 전용 .NET 프로그램인 `Aether.BuildTool`이 Native 빌드의 단일 진실 공급원이 된다.
-- Native 모듈은 우선 선언형 `*.Module.json`으로 정의한다.
-- Build Tool은 모듈 검색, 의존성 순서, 산출물 경로, compiler 실행과 Visual Studio 프로젝트 생성을 담당한다.
-- Windows에서는 MSVC, Linux에서는 Clang 또는 GCC, macOS에서는 Apple Clang을 사용한다.
-- Build Tool은 compiler별 내장 매크로를 직접 사용하는 대신 `PLATFORM_WINDOWS`, `PLATFORM_LINUX`, `PLATFORM_MACOS`를 상호 배타적인 `0/1` 값으로 모든 Native 모듈에 제공한다.
-- 각 운영체제의 바이너리는 해당 운영체제의 로컬 개발 환경이나 CI runner에서 빌드한다.
-- 생성된 Visual Studio C++ 프로젝트는 NMake 프로젝트이며 실제 빌드는 `Aether.BuildTool`에 위임한다.
-- 표준 C# 프로젝트는 기존 `.csproj`와 .NET SDK 빌드를 그대로 사용한다.
-- 생성 파일과 빌드 산출물은 `Intermediate`와 `artifacts`에 격리한다.
+- The repository-specific .NET program `Aether.BuildTool` is the single source of truth for native builds.
+- Native modules are initially declared through `*.Module.json` files.
+- The Build Tool is responsible for module discovery, dependency ordering, output paths, compiler invocation, and Visual Studio project generation.
+- Windows uses MSVC, Linux uses Clang or GCC, and macOS uses Apple Clang.
+- The Build Tool defines `PLATFORM_WINDOWS`, `PLATFORM_LINUX`, and `PLATFORM_MACOS` as mutually exclusive `0` or `1` values for every native module, avoiding direct use of compiler-specific platform macros.
+- Each operating system's binaries are built on a local development environment or CI runner for that operating system.
+- Generated Visual Studio C++ projects are NMake projects that delegate the actual build to `Aether.BuildTool`.
+- Standard C# projects continue to use their existing `.csproj` files and the .NET SDK build system.
+- Generated files and build outputs are isolated under `Intermediate` and `artifacts`.
 
-## 대안
+## Alternatives
 
-### Visual Studio C++ 프로젝트를 원본으로 사용
+### Use Visual Studio C++ Projects as the Source of Truth
 
-Windows 개발 경험은 단순하지만 다른 플랫폼의 규칙을 별도로 유지해야 하므로 선택하지 않았다.
+This option provides a straightforward Windows development experience but requires separate build rules for other platforms, so it was not selected.
 
-### CMake를 유일한 Native 빌드 시스템으로 사용
+### Use CMake as the Only Native Build System
 
-성숙한 생태계와 IDE 지원이 장점이다. 다만 Aether의 관리형 프로젝트 조합, 향후 코드 생성과 패키징을 하나의 도구에서 조정하기 위해 저장소 전용 orchestration 계층을 선택했다. 필요해지면 Build Tool 내부의 특정 외부 의존성 빌드에 CMake를 사용할 수 있다.
+CMake offers a mature ecosystem and broad IDE support. A repository-specific orchestration layer was selected so that Aether can coordinate managed projects, future code generation, and packaging through one tool. CMake can still be used internally for specific external dependencies if a concrete requirement emerges.
 
-### 실행 가능한 C# Module 규칙
+### Use Executable C# Module Rules
 
-표현력이 높지만 규칙 컴파일, 캐시, 보안과 디버깅 복잡성이 커서 초기 단계에서는 보류한다. 선언형 manifest로 표현하기 어려운 실제 사례가 생기면 다시 검토한다.
+Executable rules offer greater expressiveness but introduce complexity in rule compilation, caching, security, and debugging. This option is deferred until real use cases cannot be represented by declarative manifests.
 
-## 결과
+## Consequences
 
-- Visual Studio는 코드 탐색과 디버깅 환경으로 유지된다.
-- CLI, Visual Studio와 CI가 같은 Native 빌드 경로를 사용한다.
-- macOS 빌드에는 macOS 호스트가, Linux 빌드에는 Linux 호스트가 필요하다.
-- Build Tool 자체의 안정성과 테스트가 저장소 빌드 신뢰성에 직접 영향을 준다.
-- 현재 구현은 최소 수직 기능이며, dependency cache, 병렬 scheduler, 외부 패키지 통합은 실제 필요가 확인될 때 확장한다.
+- Visual Studio remains the primary environment for code navigation and debugging.
+- The CLI, Visual Studio, and CI use the same native build path.
+- macOS builds require a macOS host, and Linux builds require a Linux host.
+- Build Tool reliability and tests directly affect repository build reliability.
+- The current implementation is a minimal vertical slice. Dependency caching, parallel scheduling, and external package integration will be added only when concrete requirements justify them.

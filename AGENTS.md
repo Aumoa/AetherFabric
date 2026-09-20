@@ -107,7 +107,7 @@ When a request is ambiguous, begin with safe, in-scope reading, analysis, and ve
 
 ## 8. Documentation and Decisions
 
-- Write every `AGENTS.md` and `SKILL.md` file in English. This rule applies to new files and to all additions or revisions to existing files.
+- Write every `AGENTS.md`, `SKILL.md`, and human-maintained document under `docs/` in English. This rule applies to new files and to all additions or revisions to existing files.
 - Do not interpret examples or candidate lists in documentation as finalized technology choices.
 - Document usage examples and design rationale for new public contracts or structural changes.
 - Record important decisions in ADRs, including status, context, decision, alternatives, and consequences.

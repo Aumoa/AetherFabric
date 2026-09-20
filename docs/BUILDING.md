@@ -1,58 +1,64 @@
-# Aether 빌드 가이드
+# Aether Build Guide
 
-Aether는 관리형 프로젝트에는 표준 .NET 빌드를 사용하고, Native C++ 모듈에는 저장소 전용 `Aether.BuildTool`을 사용한다. Visual Studio의 C++ 프로젝트는 빌드 규칙의 원본이 아니라 Build Tool을 호출하는 NMake 프록시다.
+Aether uses the standard .NET build system for managed projects and the repository-specific `Aether.BuildTool` for native C++ modules. Visual Studio C++ projects are NMake proxies that invoke the Build Tool; they are not the source of truth for build rules.
 
-## Visual Studio 솔루션 생성
+## Generate the Visual Studio Solution
 
-Windows에서 다음 명령을 실행한다.
+Run the following command on Windows:
 
 ```bat
 GenerateSolution.bat
 ```
 
-이 명령은 Build Tool을 `Intermediate/BuildTool`에 publish하고, `Intermediate/ProjectFiles/Aether.sln`을 생성한 뒤 Visual Studio에서 연다. CI나 자동화에서 창을 열지 않으려면 다음 옵션을 사용한다.
+This command publishes the Build Tool to `Intermediate/BuildTool`, generates `Intermediate/ProjectFiles/Aether.sln`, and opens it in Visual Studio. Use the following option in CI or other automation that must not open a window:
 
 ```bat
 GenerateSolution.bat --no-open
 ```
 
-Linux 또는 macOS에서는 다음 명령으로 같은 솔루션 파일을 생성할 수 있다.
+Run the equivalent command on Linux or macOS:
 
 ```sh
 ./GenerateSolution.sh
 ```
 
-생성된 솔루션에는 `src`, `tests`, `tools` 아래의 모든 `.csproj`와 `native` 아래의 모든 `*.Module.json` 모듈이 포함된다.
+The generated solution includes every `.csproj` under `src`, `tests`, and `tools`, along with every `*.Module.json` module under `native`.
 
-## Native 빌드
+## Build Native Modules
 
-먼저 Build Tool을 준비한다.
+Prepare the Build Tool first. On Windows, run:
 
 ```bat
 Setup.bat
 ```
 
-그다음 현재 호스트 플랫폼용 Native 모듈을 빌드한다.
+On Linux or macOS, run:
 
-```bat
-dotnet Intermediate\BuildTool\Aether.BuildTool.dll build --root . --target Aether.Native --configuration Debug
+```sh
+./Setup.sh
 ```
 
-지원하는 로컬 toolchain은 다음과 같다.
+Then build a native module for the current host platform:
 
-| 호스트 | Toolchain | 출력 |
+```sh
+dotnet Intermediate/BuildTool/Aether.BuildTool.dll build --root . --target Aether.Native --configuration Debug
+```
+
+The supported local toolchains are:
+
+| Host | Toolchain | Output |
 |---|---|---|
 | Windows | MSVC | `.dll` |
-| Linux | Clang 또는 GCC | `.so` |
+| Linux | Clang or GCC | `.so` |
 | macOS | Apple Clang | `.dylib` |
 
-Native 출력은 `artifacts/native/<RID>/<Configuration>`에 생성되고 중간 파일은 `artifacts/obj/native`에 생성된다.
+Native outputs are written to `artifacts/native/<RID>/<Configuration>`, and intermediate files are written to `artifacts/obj/native`.
 
-Build Tool은 의도적으로 다른 운영체제용 cross-host 컴파일을 수행하지 않는다. Linux 바이너리는 Linux 호스트나 CI runner에서, macOS 바이너리는 Xcode command line tools가 설치된 macOS 호스트나 CI runner에서 만든다. 동일한 manifest와 Build Tool 명령을 사용하므로 플랫폼별 빌드 의미는 일관되게 유지된다.
+The Build Tool intentionally does not perform cross-host compilation. Build Linux binaries on a Linux host or CI runner, and build macOS binaries on a macOS host or CI runner with the Xcode command-line tools installed. Every platform uses the same manifest and Build Tool commands, keeping build semantics consistent.
 
-## Native 모듈 선언
+## Declare Native Modules
 
-Native 모듈은 `*.Module.json`으로 선언한다.
+Declare each native module in a `*.Module.json` file:
 
 ```json
 {
@@ -67,46 +73,46 @@ Native 모듈은 `*.Module.json`으로 선언한다.
 }
 ```
 
-초기 단계에서는 선언형 manifest를 사용한다. 복잡한 조건부 빌드 규칙이 실제로 필요해지기 전까지 실행 가능한 C# 규칙 파일을 도입하지 않는다.
+The initial build system uses declarative manifests. Do not introduce executable C# rule files until concrete build requirements can no longer be expressed clearly through the manifest.
 
-모든 Aether Native 모듈은 C++20 이상을 요구한다. Build Tool은 각 compiler에 C++20 옵션을 전달하고 `Aether.Platform.h`는 `__cplusplus` 값으로 이 요구사항을 컴파일 시 검증한다.
+All Aether native modules require C++20 or later. The Build Tool passes the appropriate C++20 option to each compiler, and `Aether.Platform.h` validates the requirement at compile time through `__cplusplus`.
 
-## 플랫폼 매크로
+## Platform Macros
 
-Build Tool은 모든 Native 모듈에 다음 매크로를 `0` 또는 `1`로 정의한다.
+The Build Tool defines all of the following macros as either `0` or `1` for every native module:
 
-| 대상 플랫폼 | `PLATFORM_WINDOWS` | `PLATFORM_LINUX` | `PLATFORM_MACOS` |
+| Target platform | `PLATFORM_WINDOWS` | `PLATFORM_LINUX` | `PLATFORM_MACOS` |
 |---|---:|---:|---:|
 | Windows | 1 | 0 | 0 |
 | Linux | 0 | 1 | 0 |
 | macOS | 0 | 0 | 1 |
 
-Native 코드는 compiler 전용 매크로 대신 이 계약을 사용한다.
+Use this contract instead of compiler-specific macros in native code:
 
 ```cpp
 #if PLATFORM_WINDOWS
-    // Windows 전용 구현
+    // Windows-specific implementation
 #elif PLATFORM_LINUX
-    // Linux 전용 구현
+    // Linux-specific implementation
 #elif PLATFORM_MACOS
-    // macOS 전용 구현
+    // macOS-specific implementation
 #endif
 ```
 
-이 이름들은 Build Tool의 내장 정의이므로 `*.Module.json`의 `definitions`에서 재정의할 수 없다. 공개 Aether Native 헤더는 `Aether.Platform.h`를 포함하며 세 값이 모두 정의되고 정확히 하나만 활성화되었는지 검사한다.
+These names are built-in Build Tool definitions and cannot be overridden through the `definitions` field in `*.Module.json`. Public Aether native headers include `Aether.Platform.h`, which verifies that all three values are defined and exactly one platform is active.
 
-## 진단과 정리
+## Diagnose and Clean
 
-로컬 compiler와 프로젝트 검색 결과를 확인한다.
+Inspect the local compiler and discovered projects:
 
-```bat
-dotnet Intermediate\BuildTool\Aether.BuildTool.dll doctor --root .
+```sh
+dotnet Intermediate/BuildTool/Aether.BuildTool.dll doctor --root .
 ```
 
-특정 Native 타깃의 산출물을 정리한다.
+Clean the outputs for a specific native target:
 
-```bat
-dotnet Intermediate\BuildTool\Aether.BuildTool.dll clean --root . --target Aether.Native --configuration Debug
+```sh
+dotnet Intermediate/BuildTool/Aether.BuildTool.dll clean --root . --target Aether.Native --configuration Debug
 ```
 
-`Aether.sln`, `.vcxproj`, `.filters` 같은 생성 파일은 직접 편집하지 않는다. manifest나 Build Tool을 변경한 후 솔루션을 다시 생성한다.
+Do not edit generated files such as `Aether.sln`, `.vcxproj`, or `.filters` files. Regenerate the solution after changing a manifest or the Build Tool.
