@@ -1,0 +1,15 @@
+## .NET build output
+[Bb]in/
+[Oo]bj/
+
+## IDE and tooling
+.vs/
+.vscode/
+*.user
+*.suo
+
+## Local NuGet and test artifacts
+.nuget/
+TestResults/
+*.nupkg
+
