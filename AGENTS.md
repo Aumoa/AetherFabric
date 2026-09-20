@@ -1,142 +1,143 @@
-# Aether 개발 지침
+# Aether Development Guidelines
 
-이 파일은 Aether 저장소에서 작업하는 AI와 개발자가 따라야 할 일반적인 설계·구현·검증 원칙을 정의한다.
+This file defines the general design, implementation, and verification principles that AI agents and developers must follow when working in the Aether repository.
 
-이 문서는 특정 기능, 제품 로드맵, 기술 선택 또는 단기 구현 목표를 확정하지 않는다. 구체적인 목표와 범위는 각 작업 요청에서 정한다. 문서에 명시되지 않았거나 아직 검증되지 않은 사항은 임의로 확정하지 말고, 사용 사례와 대안을 먼저 제시한다.
+This document does not establish a specific feature, product roadmap, technology choice, or short-term implementation goal. Each task request determines its concrete goal and scope. Do not treat undocumented or unverified assumptions as settled decisions; present relevant use cases and alternatives first.
 
-## 1. 프로젝트 관점
+## 1. Project Perspective
 
-- Aether는 지속형 온라인 월드와 실시간 분산 시뮬레이션을 위한 범용 서버 플랫폼을 지향한다.
-- 특정 게임의 규칙이나 도메인 모델을 코어에 고정하지 않는다.
-- 공개 API와 개발자 경험을 저수준 인프라 구현보다 우선한다.
-- 단일 프로세스에서 쉽게 개발할 수 있어야 하며, 향후 여러 프로세스와 노드로 분리되는 것을 방해하지 않아야 한다.
-- 새로운 설계는 장기 유지보수, 교체 가능성, 운영 가능성을 기준으로 평가한다.
+- Aether is intended to be a general-purpose server platform for persistent online worlds and real-time distributed simulations.
+- Do not embed the rules or domain model of a particular game into the core.
+- Prioritize public APIs and developer experience over low-level infrastructure details.
+- Development must remain straightforward in a single process without preventing later decomposition across processes and nodes.
+- Evaluate new designs for long-term maintainability, replaceability, and operability.
 
-## 2. 기본 설계 원칙
+## 2. Core Design Principles
 
-### 서버 권위성
+### Server Authority
 
-월드 상태와 결과의 최종 권한은 서버에 둔다. 클라이언트나 외부 입력은 검증 대상으로 취급하며, 전달된 상태를 무조건 신뢰하지 않는다.
+The server owns the authoritative world state and outcomes. Treat clients and external inputs as untrusted data that must be validated rather than accepting transmitted state at face value.
 
-### 분산을 고려한 설계
+### Distribution-Aware Design
 
-로컬 호출과 원격 호출의 차이가 장기적으로 문제가 되지 않도록 경계를 설계한다. 다만 실제 필요가 없는 단계에서 분산 시스템의 복잡성을 미리 도입하지 않는다.
+Design boundaries so that the distinction between local and remote calls does not become a long-term liability. Do not introduce distributed-system complexity before a concrete need exists.
 
-### 모듈화
+### Modularity
 
-각 모듈은 하나의 명확한 책임을 가지며, 의존성 방향은 상위 기능이 하위 구현에 불필요하게 결합되지 않도록 한다. 모듈은 가능한 한 독립적으로 테스트하고 사용할 수 있어야 한다.
+Each module must have one clear responsibility. Keep dependency direction from unnecessarily coupling higher-level capabilities to lower-level implementations. Modules should be independently testable and usable wherever practical.
 
-### 조합 우선
+### Composition over Inheritance
 
-상속 계층을 늘리기보다 작고 명시적인 서비스와 조합을 우선한다. 상속은 안정적인 공통 계약과 실제 대체 가능성이 있을 때만 사용한다.
+Prefer small, explicit services and composition over expanding inheritance hierarchies. Use inheritance only when a stable shared contract and genuine substitutability exist.
 
-### 예측 가능성
+### Predictability
 
-평균 성능만 보지 말고 tail latency, overload, backpressure, 취소, 오류 전파, graceful shutdown을 함께 설계한다. 영리하지만 이해하기 어려운 구현보다 검증 가능한 동작을 우선한다.
+Design for tail latency, overload, backpressure, cancellation, error propagation, and graceful shutdown in addition to average performance. Prefer behavior that can be understood and verified over clever but opaque implementations.
 
-### 측정 기반 최적화
+### Measurement-Driven Optimization
 
-성능 주장은 프로파일링이나 재현 가능한 benchmark로 확인한다. 추측만으로 pooling, zero-copy, lock-free 구조 또는 Native 코드를 도입하지 않는다.
+Validate performance claims with profiling or reproducible benchmarks. Do not introduce pooling, zero-copy techniques, lock-free structures, or native code based on speculation alone.
 
-### 관측 가능성
+### Observability
 
-핵심 실행 경로는 구조화 로그, metrics, tracing, health 상태를 고려한다. 운영 진단을 사후에 덧붙이는 기능으로 취급하지 않는다.
+Consider structured logging, metrics, tracing, and health state in critical execution paths. Do not treat operational diagnostics as a feature to add after implementation.
 
-### 보안 기본값
+### Secure Defaults
 
-입력 검증, 인증·인가 경계, 비밀 관리, rate limiting, 재전송과 위조 방지를 설계 초기부터 고려한다.
+Consider input validation, authentication and authorization boundaries, secret management, rate limiting, and replay or forgery prevention from the beginning of the design.
 
-## 3. 기술 및 API 원칙
+## 3. Technology and API Principles
 
-- 공개 API와 기본 구현은 C#/.NET을 중심으로 작성한다.
-- 표준 .NET Generic Host, DI, Configuration, Logging, CancellationToken과 자연스럽게 통합한다.
-- I/O 경로는 async를 우선하고 취소 토큰을 전파한다. 계산 중심 작업을 의미 없이 비동기로 감싸지 않는다.
-- API는 사용 사례, 오류 모델, 수명, 취소, lifecycle을 함께 고려해 설계한다.
-- 공개 API에는 내부 인프라, 데이터베이스, Native handle, P/Invoke 세부사항을 노출하지 않는다.
-- 고빈도 경로의 allocation과 GC 영향은 측정한다. 버퍼·메시지·엔티티 상태의 소유권과 수명을 명확히 한다.
-- 큐가 무제한으로 증가하지 않도록 용량과 과부하 정책을 명시한다. 거부·지연·드롭 중 어떤 정책을 사용할지 설명한다.
-- 공개 API, wire protocol, 저장 데이터 형식, Native ABI는 서로 다른 호환성 경계로 취급한다.
+- Center public APIs and default implementations on C# and .NET.
+- Integrate naturally with the standard .NET Generic Host, dependency injection, configuration, logging, and `CancellationToken`.
+- Prefer async I/O and propagate cancellation tokens. Do not wrap compute-bound work in asynchronous APIs without a concrete reason.
+- Design APIs together with their use cases, error models, lifetimes, cancellation behavior, and lifecycle semantics.
+- Do not expose internal infrastructure, databases, native handles, or P/Invoke details through public APIs.
+- Measure allocation and garbage-collection effects on high-frequency paths. Make ownership and lifetime explicit for buffers, messages, and entity state.
+- Prevent unbounded queue growth by defining capacity and overload policy. State whether overload causes rejection, delay, or dropping.
+- Treat public APIs, wire protocols, persisted data formats, and native ABIs as separate compatibility boundaries.
 
-## 4. Native 코드 경계
+## 4. Native Code Boundary
 
-Native/C++ 구현은 관리형 구현으로 정확한 동작과 API를 확립한 뒤, 측정으로 병목이 확인된 경우에만 검토한다.
+Consider native or C++ implementations only after a managed implementation has established correct behavior and APIs, and measurement has identified a relevant bottleneck.
 
-- Native 코드는 내부 계층에 격리한다.
-- 작고 안정적인 ABI 또는 관리형 façade 뒤에 둔다.
-- resource lifetime, 오류 변환, ABI versioning, 플랫폼별 배포를 명시한다.
-- 가능한 경우 관리형 fallback을 유지한다.
-- 일반 사용자가 Native 구현의 존재를 알아야만 사용할 수 있는 API를 만들지 않는다.
+- Isolate native code in an internal layer.
+- Place it behind a small, stable ABI or managed facade.
+- Define resource lifetime, error translation, ABI versioning, and platform-specific deployment behavior.
+- Retain a managed fallback where practical.
+- Do not design APIs that require ordinary users to understand the existence of the native implementation.
 
-## 5. 빌드 시스템 규칙
+## 5. Build System Rules
 
-### Native 빌드 규칙
+### Native Build Rules
 
-- Native C++ 빌드는 `Aether.BuildTool`을 통해 수행한다.
-- 생성된 Visual Studio C++ 프로젝트를 빌드 정의의 원본으로 사용하거나 직접 편집하지 않는다.
-- Native 모듈, source, include path와 dependency는 `*.Module.json`에 선언한다.
-- 플랫폼 분기는 compiler 전용 매크로 대신 Build Tool이 제공하는 `PLATFORM_WINDOWS`, `PLATFORM_LINUX`, `PLATFORM_MACOS`를 사용한다.
-- Visual Studio 프로젝트가 필요하면 `GenerateSolution.bat` 또는 Build Tool의 `generate` 명령으로 다시 생성한다.
-- Windows, Linux, macOS 바이너리는 원칙적으로 각 운영체제의 로컬 환경이나 CI runner에서 빌드한다.
-- 자세한 절차와 명령은 `docs/BUILDING.md`를 따른다.
+- Perform native C++ builds through `Aether.BuildTool`.
+- Do not use generated Visual Studio C++ projects as the source of truth for build definitions, and do not edit them directly.
+- Declare native modules, source directories, include paths, and dependencies in `*.Module.json`.
+- Use the Build Tool definitions `PLATFORM_WINDOWS`, `PLATFORM_LINUX`, and `PLATFORM_MACOS` instead of compiler-specific macros for platform branches.
+- Regenerate Visual Studio projects with `GenerateSolution.bat` or the Build Tool `generate` command when required.
+- Build Windows, Linux, and macOS binaries on their respective local operating systems or CI runners unless an explicitly supported cross-compilation path exists.
+- Follow `docs/BUILDING.md` for detailed procedures and commands.
 
-## 6. 작업 진행 방식
+## 6. Work Process
 
-구현이나 설계 작업은 다음 순서를 따른다.
+Follow this sequence for implementation and design work:
 
-1. 문제, 사용자 시나리오, 대상 서버 역할과 운영 상황을 정의한다.
-2. 지연 시간, 처리량, 일관성, 복구, 배포 등 관련 품질 속성과 제약을 확인한다.
-3. 가장 작은 실제 사용 예제와 공개 API를 먼저 제안한다.
-4. 모듈 책임, 의존성 방향, 실패 및 lifecycle 동작을 검토한다.
-5. 대안과 trade-off를 비교하고, 아직 결정할 수 없는 사항은 결정 보류로 남긴다.
-6. 가장 작은 수직 기능을 구현한다. 필요하지 않은 미래 기능과 추상화를 미리 만들지 않는다.
-7. 정상 동작뿐 아니라 취소, 오류, 과부하, 재시작, 종료 시나리오를 검증한다.
-8. 성능을 주장할 때는 workload, 환경, 기준선, 결과를 재현 가능하게 기록한다.
-9. 공개 API·protocol·저장 데이터·ABI의 호환성 영향을 별도로 검토한다.
-10. 중요한 선택은 ADR로 기록한다.
+1. Define the problem, user scenario, target server role, and operating context.
+2. Identify relevant quality attributes and constraints, such as latency, throughput, consistency, recovery, and deployment.
+3. Propose the smallest realistic usage example and public API first.
+4. Review module responsibilities, dependency direction, failure behavior, and lifecycle behavior.
+5. Compare alternatives and trade-offs. Leave choices undecided when the available evidence is insufficient.
+6. Implement the smallest useful vertical slice. Do not prebuild speculative abstractions or future features.
+7. Verify cancellation, error, overload, restart, and shutdown scenarios in addition to the successful path.
+8. When making performance claims, record the workload, environment, baseline, and results in a reproducible form.
+9. Review compatibility effects separately for public APIs, protocols, persisted data, and native ABIs.
+10. Record important decisions in ADRs.
 
-요청 범위가 불명확하더라도 안전하게 가능한 읽기·분석·검증은 먼저 수행한다. 다만 사용자 의도를 바꾸거나 외부 시스템에 의미 있는 변경을 가하는 작업은 필요한 선택을 확인한 뒤 진행한다.
+When a request is ambiguous, begin with safe, in-scope reading, analysis, and verification. Confirm the necessary choice before changing the user's intent or making meaningful changes to external systems.
 
-## 7. 테스트와 검증
+## 7. Testing and Verification
 
-- 공개 API에는 사용 예제와 단위 테스트를 함께 고려한다.
-- 외부 효과인 시간, transport, storage, scheduler는 테스트에서 제어할 수 있도록 설계한다.
-- 단위 테스트만으로 충분하다고 가정하지 말고, 필요한 경우 통합·부하·장시간 안정성·장애 주입 테스트를 추가한다.
-- 테스트는 동작 계약과 실패 semantics를 검증해야 하며, 구현 세부사항에 과도하게 결합하지 않는다.
-- 변경 후에는 영향 범위에 비례해 관련 build, test, benchmark, 문서 검증을 실행한다.
-- 검증하지 못한 항목과 환경 제약은 결과에 명확히 기록한다.
+- Consider usage examples and unit tests alongside every public API.
+- Make external effects such as time, transport, storage, and scheduling controllable in tests.
+- Do not assume unit tests are sufficient. Add integration, load, soak, or fault-injection tests when the risk warrants them.
+- Tests must verify behavioral contracts and failure semantics without excessive coupling to implementation details.
+- After a change, run the relevant builds, tests, benchmarks, and documentation checks in proportion to its impact.
+- Clearly report anything that could not be verified and any environmental limitations.
 
-## 8. 문서와 의사결정
+## 8. Documentation and Decisions
 
-- 문서의 예시나 후보 목록을 확정된 기술 선택으로 해석하지 않는다.
-- 새로운 공개 계약이나 구조적 변경에는 사용 예제와 설계 근거를 남긴다.
-- 중요한 결정은 ADR에 상태, 컨텍스트, 결정, 대안, 결과를 기록한다.
-- 설계 문서는 무엇을 선택했는지뿐 아니라 왜 선택했는지와 어떤 조건에서 재검토할지를 설명한다.
-- 코드와 문서의 불일치를 발견하면 작업 범위 안에서 함께 갱신하거나, 갱신하지 못한 이유를 남긴다.
+- Write every `AGENTS.md` and `SKILL.md` file in English. This rule applies to new files and to all additions or revisions to existing files.
+- Do not interpret examples or candidate lists in documentation as finalized technology choices.
+- Document usage examples and design rationale for new public contracts or structural changes.
+- Record important decisions in ADRs, including status, context, decision, alternatives, and consequences.
+- Design documents must explain why a choice was made and under what conditions it should be reconsidered, not only what was selected.
+- When code and documentation disagree, update both within the task scope or state why the inconsistency could not be resolved.
 
-## 9. 네이밍과 호환성
+## 9. Naming and Compatibility
 
-- 제품과 프레임워크 이름은 `Aether`를 사용하고, 생태계와 조직 브랜드는 `AetherFabric`을 사용한다.
-- .NET namespace, project, assembly, NuGet package는 기본적으로 `Aether.{Identifier}` 형식을 따른다.
-- 모듈 식별자는 짧고 책임을 드러내는 이름을 사용한다.
-- 기존 모듈의 책임으로 수용할 수 있는 기능을 불필요하게 새 패키지로 분리하지 않는다.
-- 호환성 변경은 공개 API, wire protocol, 저장 형식, Native ABI별로 영향을 분리해 검토한다.
+- Use `Aether` for the product and framework name, and `AetherFabric` for the ecosystem and organization brand.
+- Use the `Aether.{Identifier}` form by default for .NET namespaces, projects, assemblies, and NuGet packages.
+- Keep module identifiers concise and descriptive of their responsibility.
+- Do not create a new package when an existing module can naturally own the capability.
+- Evaluate compatibility changes separately for public APIs, wire protocols, persisted formats, and native ABIs.
 
-## 10. Git 작업 규칙
+## 10. Git Workflow
 
-- 기존 사용자 변경을 보존한다. 관련 없는 변경을 되돌리거나 덮어쓰지 않는다.
-- 작업 전 저장소 상태와 현재 브랜치를 확인한다.
-- Git linked worktree에서 작업하는 경우 전용 `codex/` 작업 브랜치를 사용한다. 일반적인 primary working tree에서는 사용자가 요청하지 않는 한 현재 브랜치를 유지한다.
-- 하나의 작업이 완료되고 검증되면 의미 있는 기능 단위로 커밋한다.
-- 파괴적인 명령은 명시적인 요청과 정확한 대상 확인 없이는 실행하지 않는다.
-- 커밋 메시지는 변경 의도와 핵심 내용을 간결하게 드러낸다.
+- Preserve existing user changes. Do not overwrite or revert unrelated work.
+- Check repository status and the current branch before starting work.
+- Use a dedicated `codex/` task branch when working in a linked Git worktree. In a primary working tree, remain on the current branch unless the user requests otherwise.
+- Commit each coherent feature-sized unit after implementation and verification are complete.
+- Do not run destructive commands without an explicit request and an exact, verified target.
+- Write concise commit messages that communicate the intent and essential change.
 
-## 11. 작업 결과 보고
+## 11. Result Reporting
 
-작업을 마칠 때는 다음을 간결하게 보고한다.
+At the end of a task, report the following concisely:
 
-- 무엇을 변경했는지
-- 어떤 검증을 실행했고 결과가 무엇인지
-- 남아 있는 제한사항이나 결정이 필요한 사항
-- 관련 파일과 ADR 또는 문서 위치
+- What changed
+- Which verification steps ran and their results
+- Any remaining limitations or decisions that require attention
+- Relevant files, ADRs, or documentation
 
-구체적인 프로젝트 목표와 우선순위는 이 지침보다 각 작업 요청이 정한다. 단, 작업 요청이 이 문서의 일반 원칙과 충돌하는 경우 충돌 지점을 설명하고 사용자의 명시적인 방향을 확인한다.
+Each task request takes precedence over this document when defining concrete project goals and priorities. If a request conflicts with these general guidelines, explain the conflict and obtain explicit direction from the user.
