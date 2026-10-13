@@ -145,12 +145,10 @@ internal sealed class VisualStudioGenerator
               <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
               <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
                 <ConfigurationType>Makefile</ConfigurationType>
-                <PlatformToolset>v143</PlatformToolset>
                 <UseDebugLibraries>true</UseDebugLibraries>
               </PropertyGroup>
               <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
                 <ConfigurationType>Makefile</ConfigurationType>
-                <PlatformToolset>v143</PlatformToolset>
                 <UseDebugLibraries>false</UseDebugLibraries>
               </PropertyGroup>
               <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -161,7 +159,7 @@ internal sealed class VisualStudioGenerator
                 <NMakeOutput>{{Xml(outputFile)}}</NMakeOutput>
                 <NMakeIncludeSearchPath>{{Xml(includes)}};$(NMakeIncludeSearchPath)</NMakeIncludeSearchPath>
                 <NMakePreprocessorDefinitions>{{Xml(definitions)}}</NMakePreprocessorDefinitions>
-                <AdditionalOptions>/std:c++20 /permissive- /Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
+                <AdditionalOptions>/std:c++23preview /permissive- /Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
               </PropertyGroup>
               <ItemGroup>
             {{sourceItems}}

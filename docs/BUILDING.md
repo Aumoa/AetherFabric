@@ -64,7 +64,7 @@ Declare each native module in a `*.Module.json` file:
 {
   "name": "Aether.Native",
   "kind": "sharedLibrary",
-  "languageStandard": "c++20",
+  "languageStandard": "c++23",
   "publicIncludeDirectories": ["Public"],
   "privateIncludeDirectories": ["Private"],
   "sourceDirectories": ["Private"],
@@ -75,7 +75,32 @@ Declare each native module in a `*.Module.json` file:
 
 The initial build system uses declarative manifests. Do not introduce executable C# rule files until concrete build requirements can no longer be expressed clearly through the manifest.
 
-All Aether native modules require C++20 or later. The Build Tool passes the appropriate C++20 option to each compiler, and `Aether.Platform.h` validates the requirement at compile time through `__cplusplus`.
+All Aether native modules use C++23. The Build Tool currently accepts only `c++23` manifests and passes `-std=c++23` on Unix and `/std:c++23preview` on MSVC. The MSVC option requires Visual Studio 2022 17.13 or later; preview features can have ABI changes between toolchain releases, so use matching toolchains for components sharing C++ ABI. The public native boundary remains a C ABI.
+
+`Aether.Platform.h` rejects C++20 and older language modes through `__cplusplus`. It accepts provisional post-C++20 values used by C++23 implementations; this is a language-mode check, not proof of complete standard support.
+
+Only use language and standard-library features verified on MSVC, GCC, upstream Clang, and Apple Clang. Check feature-test macros and compile and run the affected code on each supported toolchain. Remove or replace unavailable features. On macOS, include the Xcode/Command Line Tools SDK and deployment target in compatibility decisions.
+
+On Linux and macOS, set `CXX` to a compiler executable name or path (without arguments) to select a toolchain explicitly, for example `CXX=g++` or `CXX=clang++`. An invalid explicit selection fails without falling back. Run `clean` followed by `build` when switching compilers because intermediate paths are shared between compilers.
+
+`tests/native/Cpp23Smoke.cpp` checks a small shared feature set (`if consteval`, `std::byteswap`, and `std::expected`) and calls the native ABI. The expected checks cover successful values, error values, and `bad_expected_access` exceptions. Compile it in C++23 mode with the public include directory, the platform definitions, and the native library, then run the executable. Passing this check does not certify all C++23 features.
+
+Initial validation on 2026-10-14 found `std::expected` unavailable with Ubuntu Clang 18.1.3 and the installed libstdc++ headers. A subsequent isolated compiler upgrade resolved the restriction. The current validated baseline is:
+
+| Host | Compiler | Library/SDK | C++23 mode |
+|---|---|---|---|
+| Windows | MSVC Build Tools 14.51.36231 (Visual Studio Build Tools 2026 18.10) | Matching MSVC STL | `/std:c++23preview` |
+| Linux | GCC 15.2.0 (Ubuntu toolchain PPA package) | libstdc++ 15.2 headers; installed 14.2 runtime | `-std=c++23` |
+| Linux | Ubuntu Clang 20.1.2 | Installed libstdc++ 14 headers and 14.2 runtime | `-std=c++23` |
+| macOS | Apple Clang 21.0.0 | libc++; macOS 26.5 SDK | `-std=c++23` |
+
+All four configurations passed the native build and the expanded smoke test. `std::expected` is allowed in shared native code against this baseline. Clang 18 is not part of the revised validated baseline. Other compiler/library combinations must pass the same checks before adoption. These are tested versions, not exhaustive claims about the earliest supported versions. Older macOS deployment targets have not been certified by this check.
+
+The Linux upgrades were initially tested under ignored `artifacts/cpp23-upgraded`, then deployed permanently to the local Ubuntu 24.04 WSL environment. Clang 20 is installed through Ubuntu packages. GCC 15.2 compiler and development packages are extracted under `/opt/aether/gcc-15.2`, preserving the installed stable libstdc++ 14.2 runtime instead of accepting the toolchain PPA's GCC 16 development runtime upgrade. The `clang++` and `g++` alternatives select the new compilers; existing GCC installations remain available. `Aether.BuildTool` chooses Clang by default, and `CXX=g++` selects GCC explicitly.
+
+Windows now has stable Visual Studio Build Tools 2026 installed alongside the retained 2022 installation. The Build Tool discovers the newest stable installation through `vswhere`. Generated NMake projects use the Visual Studio default platform toolset rather than forcing `v143`, keeping the editor and build entry point usable with either installation. The new MSVC 14.51 compiler also rejects `/std:c++23`, so `/std:c++23preview` remains required.
+
+Apple Clang was retained because the Mac update inventory did not offer a Command Line Tools update. No macOS operating-system upgrade or reboot was performed. The MSVC flag must be revalidated before switching to a stable C++23 option. See [Microsoft's toolchain status](https://learn.microsoft.com/en-us/cpp/overview/compiler-versions) and [C++23 rollout](https://devblogs.microsoft.com/cppblog/c23-support-in-msvc-build-tools-14-51/) for the distinction between a stable compiler release and a stable C++23 mode.
 
 ## Platform Macros
 

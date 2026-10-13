@@ -120,7 +120,7 @@ internal sealed class MsvcToolchain : INativeToolchain
     {
         yield return "/nologo";
         yield return "/c";
-        yield return "/std:c++20";
+        yield return "/std:c++23preview";
         yield return "/EHsc";
         yield return "/utf-8";
         yield return "/permissive-";

@@ -1,7 +1,7 @@
 {
   "name": "Aether.Native",
   "kind": "sharedLibrary",
-  "languageStandard": "c++20",
+  "languageStandard": "c++23",
   "publicIncludeDirectories": [
     "Public"
   ],

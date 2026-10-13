@@ -15,7 +15,10 @@ internal sealed class UnixToolchain : INativeToolchain
 
     public static async Task<UnixToolchain> CreateAsync(bool isMacOS, CancellationToken cancellationToken)
     {
-        var candidates = isMacOS ? new[] { "clang++" } : new[] { "clang++", "g++" };
+        var configuredCompiler = Environment.GetEnvironmentVariable("CXX");
+        var candidates = !string.IsNullOrWhiteSpace(configuredCompiler)
+            ? new[] { configuredCompiler }
+            : isMacOS ? new[] { "clang++" } : new[] { "clang++", "g++" };
         foreach (var candidate in candidates)
         {
             try
@@ -37,9 +40,14 @@ internal sealed class UnixToolchain : INativeToolchain
             }
         }
 
+        if (!string.IsNullOrWhiteSpace(configuredCompiler))
+        {
+            throw new BuildToolException($"Configured CXX compiler '{configuredCompiler}' was not found or failed. Specify an executable path without arguments.");
+        }
+
         throw new BuildToolException(isMacOS
             ? "Apple Clang was not found. Install Xcode command line tools."
-            : "Neither clang++ nor g++ was found. Install a C++20 compiler.");
+            : "Neither clang++ nor g++ was found. Install a C++23 compiler.");
     }
 
     public async Task BuildAsync(
@@ -65,7 +73,7 @@ internal sealed class UnixToolchain : INativeToolchain
             Console.WriteLine($"[CXX] {Path.GetRelativePath(repositoryRoot, source)}");
             var arguments = new List<string>
             {
-                "-std=c++20",
+                "-std=c++23",
                 "-fPIC",
                 "-fvisibility=hidden",
                 "-c",

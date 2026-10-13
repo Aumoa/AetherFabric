@@ -1,7 +1,8 @@
 #pragma once
 
-#if !defined(__cplusplus) || __cplusplus < 202002L
-    #error "Aether Native requires C++20 or later."
+// Some C++23 toolchains still report a provisional post-C++20 value.
+#if !defined(__cplusplus) || __cplusplus <= 202002L
+    #error "Aether Native requires C++23 mode or later."
 #endif
 
 #if !defined(PLATFORM_WINDOWS) || !defined(PLATFORM_LINUX) || !defined(PLATFORM_MACOS)

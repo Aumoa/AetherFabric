@@ -72,6 +72,8 @@ Consider native or C++ implementations only after a managed implementation has e
 ### Native Build Rules
 
 - Perform native C++ builds through `Aether.BuildTool`.
+- Use C++23 as the native language baseline. Use only language and library features verified on MSVC, GCC, upstream Clang, and Apple Clang with their supported standard libraries. Remove or replace unsupported features rather than introducing compiler-specific behavior.
+- Check feature-test macros and run relevant compilation and runtime checks when introducing C++23 features. Selecting C++23 mode does not imply complete C++23 support.
 - Do not use generated Visual Studio C++ projects as the source of truth for build definitions, and do not edit them directly.
 - Declare native modules, source directories, include paths, and dependencies in `*.Module.json`.
 - Use the Build Tool definitions `PLATFORM_WINDOWS`, `PLATFORM_LINUX`, and `PLATFORM_MACOS` instead of compiler-specific macros for platform branches.

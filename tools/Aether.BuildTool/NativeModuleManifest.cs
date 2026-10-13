@@ -9,7 +9,7 @@ internal sealed class NativeModuleManifest
 
     public string Kind { get; init; } = "sharedLibrary";
 
-    public string LanguageStandard { get; init; } = "c++20";
+    public string LanguageStandard { get; init; } = "c++23";
 
     public string[] PublicIncludeDirectories { get; init; } = [];
 
@@ -72,7 +72,7 @@ internal sealed class NativeModuleManifest
             throw new BuildToolException($"Native module '{Name}' uses unsupported kind '{Kind}'.");
         }
 
-        if (!string.Equals(LanguageStandard, "c++20", StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(LanguageStandard, "c++23", StringComparison.OrdinalIgnoreCase))
         {
             throw new BuildToolException($"Native module '{Name}' uses unsupported language standard '{LanguageStandard}'.");
         }
